@@ -1,3 +1,4 @@
 node_modules
 dist
 
+examples/whep-viewer/www/js/index.js
