@@ -1,5 +1,12 @@
 {
     "typescript.validate.enable": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.config.path": "./tsconfig.json"
+    "typescript.config.path": "./tsconfig.json",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[javascript]": {
+        "editor.formatOnSave": true
+    },
+    "prettier.semi": false,
+    "prettier.jsxSingleQuote": true,
+    "prettier.singleQuote": true
 }
