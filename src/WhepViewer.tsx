@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  MediaStreamOrNull,
+import { useEffect, useRef } from 'react';
+import { debug, useWhepHook } from './common.js';
+
   debug,
   useWhepHook,
   WhepViewerProps,
