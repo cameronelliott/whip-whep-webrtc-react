@@ -1,0 +1,21 @@
+{
+  "name": "whip-whep-webrtc-react",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "npx tsc",
+    "build-watch": "npx tsc --watch",
+    "old-build": "esbuild --bundle --minify --sourcemap --outdir=dist src/index.jsx",
+    "old-start": "esbuild --bundle --outdir=www/js --servedir=www --watch src/index.jsx"
+  },
+  "dependencies": {
+    "@cameronelliott/whip-whep": "^1.100.1",
+    "react": "^18.0.2",
+    "react-dom": "^18.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.24",
+    "esbuild": "^0.19.4"
+  }
+}

@@ -1,0 +1,5 @@
+{
+    "typescript.validate.enable": true,
+    "typescript.tsdk": "./node_modules/typescript/lib",
+    "typescript.config.path": "./tsconfig.json"
+}

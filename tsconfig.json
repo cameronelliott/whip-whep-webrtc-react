@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext", // Specify ECMAScript target version
+    "module": "ESNext", // Specify module code generation
+    "moduleResolution": "node", // Determine module resolution strategy
+    "esModuleInterop": true, // Enable emit interoperability between CommonJS and ES Modules
+    "strict": true, // Enable all strict type-checking options
+    "jsx": "react-jsx", // Support JSX in .tsx files
+    "outDir": "./dist", // Redirect output structure to the directory
+    "skipLibCheck": false, // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true, // Disallow inconsistently-cased references to the same file
+    "declaration": true // This option tells TypeScript to emit .d.ts files
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx" // Include .ts and .tsx files in src directory
+  ],
+  "exclude": [
+    "node_modules" // Exclude node_modules from compilation
+  ]
+}
