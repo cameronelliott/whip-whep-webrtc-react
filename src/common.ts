@@ -2,6 +2,9 @@ import React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { WHEPClient } from '@cameronelliott/whip-whep/whep.js'
 
+//XXX bad
+//export {React} 
+
 
 
 // to enable debug output, in the chrome console, type: localStorage.setItem('whep-debug', '1')
