@@ -7,7 +7,7 @@ export type WhepViewerProps = {
 }
 
 export function WhepViewer(props: WhepViewerProps) {
-  debug('Entered WhepViewer-nonnative')
+  debug('Entered WhepViewer')
 
   const vidref = useRef<HTMLVideoElement>(null)
 
@@ -19,7 +19,7 @@ export function WhepViewer(props: WhepViewerProps) {
     }
   }, [mediaStream, vidref])
 
-  debug('ParentComponent returning JSX')
+  debug('WhepViewer returning JSX')
 
   if (mediaStream === null) {
     return <video autoPlay={true} muted controls />
