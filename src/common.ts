@@ -23,10 +23,7 @@ export async function mysleep() {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
 }
 
-export type WhepViewerProps = {
-  url: string
-  token?: string
-}
+
 
 export function destroyPCRef(ref: PcRef) {
   debug('-- destroyPCRef')
