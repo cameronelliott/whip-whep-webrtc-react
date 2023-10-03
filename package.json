@@ -10,9 +10,11 @@
     "old-start": "esbuild --bundle --outdir=www/js --servedir=www --watch src/index.jsx"
   },
   "dependencies": {
-    "@cameronelliott/whip-whep": "^1.100.1",
-    "react": "^18.0.2",
-    "react-dom": "^18.0.2"
+    "@cameronelliott/whip-whep": "^1.100.1"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.24",
