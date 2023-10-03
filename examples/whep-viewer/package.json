@@ -1,0 +1,20 @@
+{
+  "workspaces": [
+    "../.."
+  ],
+  "name": "my-react-app",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild --bundle --minify --sourcemap --outdir=dist src/index.tsx",
+    "start": "esbuild --bundle --outdir=www/js --servedir=www --watch src/index.tsx"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react-dom": "^18.2.8",
+    "esbuild": "^0.19.3"
+  }
+}
