@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { debug, useWhepHook } from './common.js';
 
-  debug,
-  useWhepHook,
-  WhepViewerProps,
-} from './common.js';
+export type WhepViewerProps = {
+  url: string;
+  token?: string;
+};
 
 export function WhepViewer(props: WhepViewerProps) {
-  console.log('Entered WhepViewer-nonnative');
+  debug('Entered WhepViewer-nonnative');
 
   const vidref = useRef<HTMLVideoElement>(null);
 
