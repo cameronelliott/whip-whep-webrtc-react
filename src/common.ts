@@ -135,6 +135,8 @@ export function useWhipHook(
   url: string,
   token?: string
 ): PcRef {
+  debug('-- useWhipHook() entry')
+  
   const [ntries, setNtries] = useState<number>(0)
   //cannot call useRef in useEffect
   const pcref = useRef<PcOrNull>(null)
