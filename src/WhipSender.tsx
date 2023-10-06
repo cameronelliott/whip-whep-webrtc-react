@@ -26,5 +26,5 @@ export function WhipSender(props: WhipSenderProps) {
   //   return <video autoPlay={true} muted controls ref={vidref} />
   // }
 
-  return
+  return <></>
 }
