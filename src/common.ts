@@ -25,110 +25,19 @@ export async function mysleep() {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
 }
 
-export function destroyPCRef(ref: PcRef) {
+export function destroyPCRef(pc: RTCPeerConnection) {
   debug('-- destroyPCRef')
-  if (ref) {
-    if (ref.current) {
-      ref.current.getTransceivers().forEach((x) => {
-        x.stop()
-      })
-      ref.current.ontrack = null
-      ref.current.oniceconnectionstatechange = null
-      ref.current.onconnectionstatechange = null
-      ref.current.close()
-    }
-    ref.current = null // just be explicit
-    //ref.current = new RTCPeerConnection(pcConf)
-  }
 
-  // how do you check this function really does it's job?
-  // you watch PC go away in chrome here: chrome://webrtc-internals/
-  // how do you force the GC, either:
-  // 1. force GC from chrome devtools
-  // 2. add code here do to window.gc() and add --expose-gc to the process
-  // I did #1 for testing
-  // I also testing breaking this function to confirm my test was valid
+  pc.getTransceivers().forEach((x) => {
+    x.stop()
+  })
+  pc.ontrack = null
+  pc.oniceconnectionstatechange = null
+  pc.onconnectionstatechange = null
+  pc.close()
 }
 
-export function useWhepHook(
-  url: string,
-  //setMediaStream: (ms: MediaStreamOrNull) => void = () => { },
-  //ntries: number,
-  //setNtries: (n: number) => void = () => { },
-  token?: string
-): [PcRef, MediaStreamOrNull] {
-  const [ntries, setNtries] = useState<number>(0)
-  const [mediaStream, setMediaStream] = useState<MediaStreamOrNull>(null)
-  //cannot call useRef in useEffect
-  const pcref = useRef<PcOrNull>(null)
 
-  //cannot call useRef in useEffect
-  const whepRef = useRef<WHEPClient | null>(null)
-
-  const forceRender = () => setNtries(ntries + 1)
-
-  useEffect(() => {
-    debug('-- useWhepReceiverHook() useEffect entry live:')
-
-    if (pcref.current === null) {
-      pcref.current = new RTCPeerConnection(pcConf)
-    }
-    if (whepRef.current === null) {
-      whepRef.current = new WHEPClient()
-    }
-
-    pcref.current!.ontrack = (ev) => {
-      debug('-- ontrack entry kind: ', ev.track.kind)
-      const ms = ev.streams[0]
-      if (ms) {
-        debug('-- ontrack got stream')
-        setMediaStream(ms)
-      } else {
-        console.warn('-- ontrack empty stream')
-      }
-    }
-    pcref.current!.addTransceiver('video', { direction: 'recvonly' })
-    pcref.current!.addTransceiver('audio', { direction: 'recvonly' })
-    pcref.current!.oniceconnectionstatechange = (ev) => {
-      const st = (ev.target as RTCPeerConnection).iceConnectionState
-      debug('-- ice state change', st)
-
-      if (st === 'disconnected' || st === 'failed' || st === 'closed') {
-        debug('-- ice state closed/etc, forcing render')
-        //XXX
-        // I am concerned these two state touches might cause two re - renders
-        // but I hope not
-        forceRender()
-        //setMediaStream(null)
-      }
-    }
-
-    if (pcref.current && pcref.current.iceConnectionState !== 'connected') {
-      whepRef
-        .current!.view(pcref.current, url, token)
-        .then(() => {
-          debug('-- whep.view() done OK')
-        })
-        .catch((err: Error) => {
-          debug('-- whep.view() done ERR / sleeping', err)
-          mysleep().then(() => {
-            debug('-- whep.view() done ERR, forcing render')
-            forceRender()
-          })
-        })
-    }
-
-    return () => {
-      debug('-- useWhepReceiverHook() useEffect cleanup')
-      destroyPCRef(pcref)
-      whepRef.current!.stop().catch(() => {
-        debug('-- whep.stop() done ERR')
-      })
-    }
-  }, [ntries]) // no-array: every render, []: once, [ntries]: when ntries changes
-
-  return [pcref, mediaStream]
-}
 
 export function useWhipHook(
   mediaStream: MediaStream,
@@ -136,7 +45,7 @@ export function useWhipHook(
   token?: string
 ): PcRef {
   debug('-- useWhipHook() entry')
-  
+
   const [ntries, setNtries] = useState<number>(0)
   //cannot call useRef in useEffect
   const pcref = useRef<PcOrNull>(null)
@@ -160,7 +69,7 @@ export function useWhipHook(
       whipRef.current = new WHIPClient()
     }
 
-    pcref.current!.oniceconnectionstatechange = (ev) => {
+    pcref.current.oniceconnectionstatechange = (ev) => {
       const st = (ev.target as RTCPeerConnection).iceConnectionState
       debug('-- ice state change', st)
 
@@ -191,7 +100,10 @@ export function useWhipHook(
 
     return () => {
       debug('-- useWhipHook() useEffect cleanup')
-      destroyPCRef(pcref)
+      if (pcref.current !== null) {
+        destroyPCRef(pcref.current)
+      }
+      pcref.current = null
       whipRef.current!.stop().catch(() => {
         debug('-- whip.stop() done ERR')
       })
