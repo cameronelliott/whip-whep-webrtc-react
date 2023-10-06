@@ -42,17 +42,18 @@ export type WhepConnectProps = {
 }
 
 export function useWhepUseEffect(
-  // mediaStream: MediaStream,
   url: string,
   token?: string
 ): [MediaStream, boolean] {
   //
   debug('-- useWhepUseEffect() entry')
 
-  const [counter, setCounter] = useState(0)
-  const [conn, setConnected] = useState(false)
-  const forceRender = () => setCounter(counter + 1)
+  const [counter, setCounter] = useState(0) // this is used to restart a connection
+  const [conn, setConnected] = useState(false) // this is used change css styles
+  const forceRender = () => setCounter(counter + 1) // convienence function
 
+  // this only gets created once, and is never destroyed
+  // tracks get added and removed from it inside ontrack()
   const stream = useRef<MediaStreamOrNull>(null)
   if (stream.current === null) {
     stream.current = new MediaStream()
@@ -134,7 +135,10 @@ export function WhepViewer(props: WhepViewerProps) {
   const [stream, conn] = useWhepUseEffect(props.url, props.token)
 
   useEffect(() => {
+    debug('WhepViewer useEffect entry')
+
     if (vidref.current !== null) {
+      debug('WhepViewer useEffect setting srcObject')
       vidref.current!.srcObject = stream
     }
   }, [vidref])
