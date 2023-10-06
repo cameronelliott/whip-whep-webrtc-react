@@ -4,11 +4,16 @@ import { createRoot } from 'react-dom/client'
 //import { WhepViewer } from 'whip-whep-webrtc-react'
 // USE THIS LINE FOR DEVELOPMENT
 import { WhepViewer } from '../../../src/WhepViewer'
+import React from 'react'
 
 new EventSource('/esbuild').addEventListener('change', () => location.reload())
 
 function App() {
-  return <WhepViewer url='http://localhost:4000'></WhepViewer>
+  return (
+    <React.StrictMode>
+      <WhepViewer url='http://localhost:4000'></WhepViewer>
+    </React.StrictMode>
+  )
 }
 
 const container = document.getElementById('root')
