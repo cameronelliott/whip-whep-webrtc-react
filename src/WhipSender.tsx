@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { debug, useWhipHook } from './common.js'
+import { debug, useWhipUseEffect } from './common.js'
 
 export type WhipSenderProps = {
   mediaStream: MediaStream
@@ -8,23 +8,35 @@ export type WhipSenderProps = {
 }
 
 export function WhipSender(props: WhipSenderProps) {
-  debug('Entered WhepViewer')
+  debug('Entered WhipSender')
 
-  const pcref = useWhipHook(props.mediaStream, props.url, props.token)
+  let conn = false
 
-  // useEffect(() => {
-  //   if (vidref.current) {
-  //     vidref.current.srcObject = mediaStream
-  //   }
-  // }, [mediaStream, vidref])
+  conn = useWhipUseEffect(props.mediaStream, props.url, props.token)
 
-  debug('WhepViewer returning JSX')
+  debug('WhipSender returning JSX')
 
-  // if (mediaStream === null) {
-  //   return <video autoPlay={true} muted controls />
-  // } else {
-  //   return <video autoPlay={true} muted controls ref={vidref} />
-  // }
+  const style = { border: '', opacity: 0.5 }
+  if (conn) {
+    style.border = ''
+    style.opacity = 1
+  }
 
-  return <></>
+  // create an attributes va
+  const attributes = {
+    controls: true,
+    style: style,
+    autoPlay: true,
+    muted: true,
+  }
+
+  const setSrcObject = (v: HTMLVideoElement | null) => {
+    if (v && v instanceof HTMLVideoElement) {
+      v.srcObject = props.mediaStream
+    }
+  }
+
+  //  <video {...attributes} ref={(x) => (x!.srcObject = props.mediaStream)} />
+
+  return <video {...attributes} ref={(z) => setSrcObject(z)} />
 }
