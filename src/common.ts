@@ -21,7 +21,7 @@ export const pcConf: RTCConfiguration = {
 
 export async function mysleep() {
   debug('-- mysleep')
-  const seconds = 3
+  const seconds = 5
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
 }
 
@@ -35,80 +35,6 @@ export function destroyPCRef(pc: RTCPeerConnection) {
   pc.oniceconnectionstatechange = null
   pc.onconnectionstatechange = null
   pc.close()
-}
-
-export function useWhipHook(
-  mediaStream: MediaStream,
-  url: string,
-  token?: string
-): PcRef {
-  debug('-- useWhipHook() entry')
-
-  const [ntries, setNtries] = useState<number>(0)
-  //cannot call useRef in useEffect
-  const pcref = useRef<PcOrNull>(null)
-
-  //cannot call useRef in useEffect
-  const whipRef = useRef<WHIPClient | null>(null)
-
-  const forceRender = () => setNtries(ntries + 1)
-
-  useEffect(() => {
-    debug('-- useWhipHook() useEffect entry')
-
-    if (pcref.current === null) {
-      pcref.current = new RTCPeerConnection(pcConf)
-
-      for (const track of mediaStream.getTracks()) {
-        pcref.current.addTransceiver(track, { direction: 'sendonly' })
-      }
-    }
-    if (whipRef.current === null) {
-      whipRef.current = new WHIPClient()
-    }
-
-    pcref.current.oniceconnectionstatechange = (ev) => {
-      const st = (ev.target as RTCPeerConnection).iceConnectionState
-      debug('-- ice state change', st)
-
-      if (st === 'disconnected' || st === 'failed' || st === 'closed') {
-        debug('-- ice state closed/etc, forcing render')
-        //XXX
-        // I am concerned these two state touches might cause two re - renders
-        // but I hope not
-        forceRender()
-        //setMediaStream(null)
-      }
-    }
-
-    if (pcref.current && pcref.current.iceConnectionState !== 'connected') {
-      whipRef
-        .current!.publish(pcref.current, url, token)
-        .then(() => {
-          debug('-- whip.publish done OK')
-        })
-        .catch((err: Error) => {
-          debug('-- whip.publish done ERR / sleeping', err)
-          mysleep().then(() => {
-            debug('-- whip.publish done ERR, forcing render')
-            forceRender()
-          })
-        })
-    }
-
-    return () => {
-      debug('-- useWhipHook() useEffect cleanup')
-      if (pcref.current !== null) {
-        destroyPCRef(pcref.current)
-      }
-      pcref.current = null
-      whipRef.current!.stop().catch(() => {
-        debug('-- whip.stop() done ERR')
-      })
-    }
-  }, [ntries]) // no-array: every render, []: once, [ntries]: when ntries changes
-
-  return pcref
 }
 
 export function useWhepUseEffect(
@@ -160,6 +86,13 @@ export function useWhepUseEffect(
       debug('-- ice state change', st)
 
       if (st === 'disconnected' || st === 'failed' || st === 'closed') {
+        //see if we can prevent the video element from resizing to 2x2
+        //effectively, disappearing
+        stream.current!.getTracks().forEach((t) => t.stop())
+        stream
+          .current!.getTracks()
+          .forEach((t) => stream.current!.removeTrack(t))
+
         forceRender() // two state updates, two renders? :()
         setConnected(false)
       }
@@ -194,4 +127,68 @@ export function useWhepUseEffect(
   }, [counter]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
 
   return [stream.current!, conn]
+}
+
+export function useWhipUseEffect(
+  ms: MediaStream,
+  url: string,
+  token?: string
+): boolean {
+  //
+  debug('-- useWhipUseEffect() entry')
+
+  const [counter, setCounter] = useState(0) // this is used to restart a connection
+  const [conn, setConnected] = useState(false) // this is used change css styles
+  const forceRender = () => setCounter(counter + 1) // convienence function
+
+  useEffect(() => {
+    debug('-- useWhipUseEffect() useEffect entry')
+
+    const pc = new RTCPeerConnection(pcConf)
+
+    const whip = new WHIPClient()
+
+    for (const track of ms.getTracks()) {
+      pc.addTransceiver(track, { direction: 'sendonly' })
+    }
+
+    pc.oniceconnectionstatechange = (ev) => {
+      const st = (ev.target as RTCPeerConnection).iceConnectionState
+      debug('-- ice state change', st)
+
+      if (st === 'disconnected' || st === 'failed' || st === 'closed') {
+        forceRender() // two state updates, two renders? :()
+        setConnected(false)
+      }
+
+      if (st === 'connected') {
+        setConnected(true)
+      }
+    }
+    debug('-- whip.publish() entry')
+    whip
+      .publish(pc, url, token)
+      .then(() => {
+        debug('-- whip.publish() done OK')
+      })
+      .catch((err: Error) => {
+        debug('-- whip.publish() done ERR / sleeping', err)
+        mysleep().then(() => {
+          debug('-- whip.publish() done ERR, forcing render')
+          forceRender() // two state updates, two renders? :()
+          setConnected(false)
+        })
+      })
+
+    // return the cleanup function to be called on component unmount
+    return () => {
+      debug('-- useWhipUseEffect() useEffect cleanup')
+      destroyPCRef(pc)
+      whip.stop().catch(() => {
+        debug('-- whep.stop() done ERR')
+      })
+    }
+  }, [counter]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
+
+  return conn
 }
