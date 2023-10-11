@@ -34,17 +34,10 @@ function Foo() {
       })
   }
 
-  if (stream === null) {
-    console.log('-- WhipSender returning null')
-    return <></>
-  } else {
-    console.log('-- WhipSender returning JSX')
-    return (
-      // <WhipSender mediaStream={stream} url='http://localhost:4000'></WhipSender>
-      <WhipSender
-        mediaStream={stream!}
-        url='https://hjarta.duckdns.org/app/s1?direction=whip'
-      ></WhipSender>
-    )
-  }
+  return (
+    <WhipSender
+      mediaStream={stream!}
+      url='http://localhost:8080/whip'
+    ></WhipSender>
+  )
 }
