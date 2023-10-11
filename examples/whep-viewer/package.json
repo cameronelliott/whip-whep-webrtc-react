@@ -6,8 +6,8 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "esbuild src/index.tsx --bundle --minify --sourcemap --outdir=dist --alias:react=react --alias:react-dom=react-dom",
-    "start": "esbuild src/index.tsx --bundle --outdir=www/js --servedir=www --watch --alias:react=react --alias:react-dom=react-dom"
+    "build": "esbuild src/index.tsx --bundle --format=esm --alias:react=react --alias:react-dom=react-dom --outdir=dist --minify --sourcemap",
+    "start": "esbuild src/index.tsx --bundle --format=esm --alias:react=react --alias:react-dom=react-dom --outdir=www/js --servedir=www --watch "
   },
   "dependencies": {
     "react": "^18.2.0",
