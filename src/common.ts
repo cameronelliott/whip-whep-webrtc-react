@@ -37,31 +37,41 @@ export function destroyPCRef(pc: RTCPeerConnection) {
   pc.close()
 }
 
+/*
+this hook will run every time the call component is rendered
+hooks should not be inside conditionals, so it should get called every time
+
+our call to useEffect will run the first time through, and when the
+condition array indicates it should be called again
+
+we want the useEffect to run when:
+- the first render
+- the props change (url, token) (first render is a prop change)
+- the ice state goes to 'disconnected' or 'failed' or 'closed'
+- not when the ice state goes to 'connected'
+*/
+
+// do we want the component using this hook to dial on every render?
+// dial on every render makes the logic simpler, but is it the right thing to do?
+// whenever a parent renders, generally all the children render too
+// so if the parent is re-rendering, the child will re-dial.
+// this is probably not what we want.
+// we could use React.memo() to prevent a render on each parent render.
+// but that's not the right thing to do either.
+
+//DECISION: don't use React.memo() to prevent a render on each parent render.
+//DECISION: don't dial on every render, thus use useEffect() with a condition array
+
 export function useWhepUseEffect(
   url: string,
   token?: string
-): [MediaStream, boolean] {
+): [MediaStream, RTCPeerConnection] {
   //
-  debug('-- useWhepUseEffect() entry')
+  debug('-- hook entry')
 
-  const [counter, setCounter] = useState(0) // this is used to restart a connection
-  const [conn, setConnected] = useState(false) // this is used change css styles
-  const forceRender = () => setCounter(counter + 1) // convienence function
-
-  // this only gets created once, and is never destroyed
-  // tracks get added and removed from it inside ontrack()
-  const stream = useRef<MediaStreamOrNull>(null)
-  if (stream.current === null) {
-    stream.current = new MediaStream()
-  }
-
-  useEffect(() => {
-    debug('-- useWhepHook() useEffect entry')
-
+  const newPc = () => {
+    debug('-- newPc')
     const pc = new RTCPeerConnection(pcConf)
-
-    const whep = new WHEPClient()
-
     pc.ontrack = (ev) => {
       debug('-- ontrack entry kind: ', ev.track.kind)
       if (ev.streams[0]) {
@@ -81,6 +91,7 @@ export function useWhepUseEffect(
     }
     pc.addTransceiver('video', { direction: 'recvonly' })
     pc.addTransceiver('audio', { direction: 'recvonly' })
+
     pc.oniceconnectionstatechange = (ev) => {
       const st = (ev.target as RTCPeerConnection).iceConnectionState
       debug('-- ice state change', st)
@@ -92,16 +103,37 @@ export function useWhepUseEffect(
         stream
           .current!.getTracks()
           .forEach((t) => stream.current!.removeTrack(t))
+        destroyPCRef(pc)
 
         forceRender() // two state updates, two renders? :()
-        setConnected(false)
       }
 
       if (st === 'connected') {
-        setConnected(true)
+        // do nothing
       }
     }
+    return pc
+  }
+  const [pc, setPc] = useState(() => newPc()) // lazy init!
+  const forceRender = () => {
+    debug('-- forceRender')
+    return setPc(newPc())
+  }
 
+  // this only gets created once, and is never destroyed
+  // tracks get added and removed from it inside ontrack()
+  const stream = useRef<MediaStreamOrNull>(null)
+  if (stream.current === null) {
+    debug('-- stream.current is null, creating new MediaStream')
+    stream.current = new MediaStream()
+  }
+  debug('-- before useeffect ss=', pc.signalingState)
+  useEffect(() => {
+    debug('-- useEffect entry ss=', pc.signalingState)
+
+    const whep = new WHEPClient()
+
+    debug('-- pre whep.view()')
     whep
       .view(pc, url, token)
       .then(() => {
@@ -112,19 +144,19 @@ export function useWhepUseEffect(
         mysleep().then(() => {
           debug('-- whep.view() done ERR, forcing render')
           forceRender() // two state updates, two renders? :()
-          setConnected(false)
         })
       })
+    debug('-- post whep.view()')
 
     // return the cleanup function to be called on component unmount
     return () => {
-      debug('-- useWhepReceiverHook() useEffect cleanup')
+      debug('-- useEffect cleanup')
       destroyPCRef(pc)
       whep.stop().catch(() => {
         debug('-- whep.stop() done ERR')
       })
     }
-  }, [counter]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
+  }, [pc]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
 
-  return [stream.current!, conn]
+  return [stream.current!, pc]
 }

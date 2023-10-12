@@ -17,30 +17,34 @@ function App() {
     <React.StrictMode>
       <WhepViewer url='http://localhost:4000'>
         <WhepViewerContext.Consumer>
-          {({ isConnected, mediaStream }) => (
-            <video
-              muted
-              autoPlay
-              controls
-              ref={(vid) => {
-                debug(
-                  'videoref vid/ms/ms.active',
-                  vid===null,
-                  mediaStream===null,
-                  mediaStream!.active
-                )
-                if (vid) {
-                  //if (mediaStream && mediaStream.active) {
-                  if (mediaStream) {
-                    vid.srcObject = mediaStream
-                  } else {
-                    vid.srcObject = null
+       
+          {({ isConnected, mediaStream }) => {
+            debug('inline render', isConnected, mediaStream)
+            return (
+              <video
+                muted
+                autoPlay
+                controls
+                ref={(vid) => {
+                  debug(
+                    'videoref vid/ms/ms.active',
+                    vid === null,
+                    mediaStream === null,
+                    mediaStream!.active
+                  )
+                  if (vid) {
+                    //if (mediaStream && mediaStream.active) {
+                    if (mediaStream) {
+                      vid.srcObject = mediaStream
+                    } else {
+                      vid.srcObject = null
+                    }
                   }
-                }
-              }}
-              style={isConnected ? videoGood : videoBad}
-            />
-          )}
+                }}
+                style={isConnected ? videoGood : videoBad}
+              />
+            )
+          }}
         </WhepViewerContext.Consumer>
       </WhepViewer>
     </React.StrictMode>
