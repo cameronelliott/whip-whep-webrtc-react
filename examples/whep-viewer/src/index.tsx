@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client'
 // USE THIS LINE FOR DEVELOPMENT
 import { WhepViewerContext, WhepViewer } from '../../../src/WhepViewer'
 import React from 'react'
-import { MediaStreamOrNull } from '../../../src/common'
+import { MediaStreamOrNull, debug } from '../../../src/common'
 
 new EventSource('/esbuild').addEventListener('change', () => location.reload())
 
@@ -23,10 +23,10 @@ function App() {
               autoPlay
               controls
               ref={(vid) => {
-                console.log(
+                debug(
                   'videoref vid/ms/ms.active',
-                  vid,
-                  mediaStream,
+                  vid===null,
+                  mediaStream===null,
                   mediaStream!.active
                 )
                 if (vid) {
