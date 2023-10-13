@@ -29,7 +29,9 @@ export function destroyPCRef(pc: RTCPeerConnection) {
   debug('-- destroyPCRef')
 
   pc.getTransceivers().forEach((x) => {
-    x.stop()
+    try {
+      x.stop()
+    } catch (err) {}
   })
   pc.ontrack = null
   pc.oniceconnectionstatechange = null
@@ -62,28 +64,42 @@ we want the useEffect to run when:
 //DECISION: don't use React.memo() to prevent a render on each parent render.
 //DECISION: don't dial on every render, thus use useEffect() with a condition array
 
+// Re-renders:
+// We want a re-render whenever my version of the connection state changes,
+// as that will get passed to children, and they will re-render.
+// this is mostly important for showing the state of video elements.
+// connection metrics will get their own wrapper with their own callbacks,
+// so the element hosting this hook need not worry about them.
+
+//hasFailed: boolean may get set twice, this is why i dont use counter: number
+// it can get set by the transition from say iceconn/new -> iceconn/disconnected
+// but it can ALSO get set by the throw inside the whep.view() promise
+enum Status {
+  dialingOrConnected,
+  disconnected,
+}
+
 export function useWhepUseEffect(
   url: string,
   token?: string
-): [MediaStream, RTCPeerConnection] {
+): [MediaStream, boolean] {
   //
   debug('-- hook entry')
 
-  const newPc = () => {
+  //#region newpcfn def
+  const newPcFn = () => {
     debug('-- newPc')
     const pc = new RTCPeerConnection(pcConf)
     pc.ontrack = (ev) => {
       debug('-- ontrack entry kind: ', ev.track.kind)
       if (ev.streams[0]) {
         // delete the existing tracks
-        stream
-          .current!.getTracks()
-          .forEach((t) => stream.current!.removeTrack(t))
+        stream.getTracks().forEach((t) => stream.removeTrack(t))
 
         debug('-- ontrack got stream')
         for (const tr of ev.streams[0].getTracks()) {
           debug('-- ontrack receiver kind: ', tr.kind)
-          stream.current!.addTrack(tr)
+          stream.addTrack(tr)
         }
       } else {
         console.warn('-- ontrack empty stream')
@@ -99,37 +115,42 @@ export function useWhepUseEffect(
       if (st === 'disconnected' || st === 'failed' || st === 'closed') {
         //see if we can prevent the video element from resizing to 2x2
         //effectively, disappearing
-        stream.current!.getTracks().forEach((t) => t.stop())
-        stream
-          .current!.getTracks()
-          .forEach((t) => stream.current!.removeTrack(t))
+        stream.getTracks().forEach((t) => t.stop())
+        stream.getTracks().forEach((t) => stream.removeTrack(t))
         destroyPCRef(pc)
 
-        forceRender() // two state updates, two renders? :()
+        // we don't sleep here
+        forceRender()
+        setIsConnected(false)
       }
 
       if (st === 'connected') {
-        // do nothing
+        setIsConnected(true)
       }
     }
     return pc
   }
-  const [pc, setPc] = useState(() => newPc()) // lazy init!
-  const forceRender = () => {
-    debug('-- forceRender')
-    return setPc(newPc())
-  }
+  //#endregion
 
-  // this only gets created once, and is never destroyed
-  // tracks get added and removed from it inside ontrack()
-  const stream = useRef<MediaStreamOrNull>(null)
-  if (stream.current === null) {
-    debug('-- stream.current is null, creating new MediaStream')
-    stream.current = new MediaStream()
-  }
-  debug('-- before useeffect ss=', pc.signalingState)
+  const [stream, DoNotUse] = useState(() => new MediaStream()) // lazy init!, do not use setter!
+  const [isConnected, setIsConnected] = useState(false) //hook 2
+  const [counter, setCounter] = useState(0) //hook 3
+  const forceRender = () => setCounter(counter + 1)
+
+  // we want the useeffect to run when:
+  // 1st time through
+  // and on transition from connected -> disconnected
+
+  debug('-- before useeffect')
   useEffect(() => {
-    debug('-- useEffect entry ss=', pc.signalingState)
+    debug('-- useEffect entry')
+
+    if (isConnected) {
+      debug('-- useEffect isConnected, return early')
+      return
+    }
+
+    const pc = newPcFn()
 
     const whep = new WHEPClient()
 
@@ -143,7 +164,8 @@ export function useWhepUseEffect(
         debug('-- whep.view() done ERR / sleeping', err)
         mysleep().then(() => {
           debug('-- whep.view() done ERR, forcing render')
-          forceRender() // two state updates, two renders? :()
+          forceRender()
+          setIsConnected(false)
         })
       })
     debug('-- post whep.view()')
@@ -156,7 +178,8 @@ export function useWhepUseEffect(
         debug('-- whep.stop() done ERR')
       })
     }
-  }, [pc]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
+  }, [counter]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
 
-  return [stream.current!, pc]
+  debug('-- hook exit with status: ', isConnected)
+  return [stream, isConnected]
 }

@@ -26,10 +26,10 @@ export const WhepViewer: React.FC<WhepViewerProps> = ({
   debug('Entered WhepViewer')
 
   // stream should never be null or change instances
-  const [mediaStream, pc] = useWhepUseEffect(url, token)
-  const isConnected = pc.iceConnectionState === 'connected'
+  const [mediaStream, isConnected] = useWhepUseEffect(url, token)
 
-  debug('WhepViewer returning JSX')
+
+  debug('WhepViewer returning JSX isconn', isConnected)
 
   return (
     <WhepViewerContext.Provider value={{ mediaStream, isConnected }}>
