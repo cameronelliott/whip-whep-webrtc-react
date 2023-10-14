@@ -3,8 +3,10 @@ import { ReactNode } from 'react'
 import React from 'react'
 import {
   MediaStreamOrNull,
+  PcOrNull,
+  PcOrNullRef,
   debug,
-  destroyPCRef,
+  destroyPC,
   mysleep,
   pcConf,
   useWhepUseEffect,
@@ -26,22 +28,23 @@ export const WhepViewer: React.FC<WhepViewerProps> = ({
   debug('Entered WhepViewer')
 
   // stream should never be null or change instances
-  const [mediaStream, isConnected] = useWhepUseEffect(url, token)
-
+  const [pcref, stream, isConnected] = useWhepUseEffect(url, token)
 
   debug('WhepViewer returning JSX isconn', isConnected)
 
   return (
-    <WhepViewerContext.Provider value={{ mediaStream, isConnected }}>
+    <WhepViewerContext.Provider value={{ pcref, stream, isConnected }}>
       {children}
     </WhepViewerContext.Provider>
   )
 }
 
 export const WhepViewerContext = React.createContext<{
-  mediaStream: MediaStreamOrNull
+  pcref: PcOrNullRef | null
+  stream: MediaStreamOrNull
   isConnected: boolean
 }>({
-  mediaStream: null,
+  pcref: null,
+  stream: null,
   isConnected: false,
 })
