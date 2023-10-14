@@ -81,7 +81,7 @@ export function useWhepUseEffect(
   token?: string
 ): [PcOrNullRef, MediaStream, boolean] {
   //
-  debug('-- hook entry')
+  debug('-- entering useWhepUseEffect')
 
   //#region newpcfn def
   const newPcFn = () => {
@@ -143,36 +143,41 @@ export function useWhepUseEffect(
   // 1st time through
   // and on transition from connected -> disconnected
 
-  //#region dialwhep def
-  const dialWhep = useCallback(() => {
-    const whep = new WHEPClient()
+  //#region dialwhep def:
+  const dialWhep = useCallback(
+    (pc: RTCPeerConnection) => {
+      const whep = new WHEPClient()
 
-    debug('-- pre whep.view()')
-    whep
-      .view(pcref.current!, url, token)
-      .then(() => {
-        debug('-- whep.view() done OK')
-      })
-      .catch((err: Error) => {
-        debug('-- whep.view() done ERR / sleeping', err)
-        mysleep().then(() => {
-          debug('-- whep.view() done ERR, forcing render')
-          forceRender()
-          setIsConnected(false)
+      debug('-- pre whep.view()')
+      whep
+        .view(pc, url, token)
+        .then(() => {
+          debug('-- whep.view() done OK')
         })
-      })
-    debug('-- post whep.view()')
-    return whep
-  }, [url, token]) // only re-create the callback if url or token changes
+        .catch((err: Error) => {
+          debug('-- whep.view() done ERR / sleeping', err)
+          mysleep().then(() => {
+            debug('-- whep.view() done ERR, forcing render')
+            forceRender()
+            setIsConnected(false)
+          })
+        })
+      debug('-- post whep.view()')
+      return whep
+    },
+    [url, token]
+  ) // only re-create the callback if url or token changes
   //#endregion
 
+  // there is a potenial race here
+  // that would be fixed with the 'const active=true' pattern
   debug('-- useeffect before')
   useEffect(() => {
     debug('-- useeffect inside')
 
     pcref.current = newPcFn()
 
-    const whep = dialWhep()
+    const whep = dialWhep(pcref.current!)
 
     // return the cleanup function to be called on component unmount
     return () => {
