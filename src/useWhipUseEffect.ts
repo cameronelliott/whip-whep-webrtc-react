@@ -1,6 +1,6 @@
-import { WHIPClient } from "@cameronelliott/whip-whep/whip"
-import { useState, useEffect } from "react"
-import { debug, pcConf, mysleep, destroyPCRef } from "./common"
+import { WHIPClient } from '@cameronelliott/whip-whep/whip'
+import { useState, useEffect } from 'react'
+import { debug, pcConf, mysleep, destroyPC } from './common'
 
 export function useWhipUseEffect(
   ms: MediaStream,
@@ -56,7 +56,7 @@ export function useWhipUseEffect(
     // return the cleanup function to be called on component unmount
     return () => {
       debug('-- useWhipUseEffect() useEffect cleanup')
-      destroyPCRef(pc)
+      destroyPC(pc)
       whip.stop().catch(() => {
         debug('-- whep.stop() done ERR')
       })
