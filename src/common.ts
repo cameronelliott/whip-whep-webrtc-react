@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { WHEPClient } from '@cameronelliott/whip-whep/whep.js'
 import { WHIPClient } from '@cameronelliott/whip-whep/whip.js'
@@ -25,7 +25,7 @@ export async function mysleep() {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
 }
 
-export function destroyPCRef(pc: RTCPeerConnection) {
+export function destroyPC(pc: RTCPeerConnection) {
   debug('-- destroyPCRef')
 
   pc.getTransceivers().forEach((x) => {
@@ -74,15 +74,12 @@ we want the useEffect to run when:
 //hasFailed: boolean may get set twice, this is why i dont use counter: number
 // it can get set by the transition from say iceconn/new -> iceconn/disconnected
 // but it can ALSO get set by the throw inside the whep.view() promise
-enum Status {
-  dialingOrConnected,
-  disconnected,
-}
+export type PcOrNullRef = React.MutableRefObject<PcOrNull>
 
 export function useWhepUseEffect(
   url: string,
   token?: string
-): [MediaStream, boolean] {
+): [PcOrNullRef, MediaStream, boolean] {
   //
   debug('-- hook entry')
 
@@ -117,7 +114,7 @@ export function useWhepUseEffect(
         //effectively, disappearing
         stream.getTracks().forEach((t) => t.stop())
         stream.getTracks().forEach((t) => stream.removeTrack(t))
-        destroyPCRef(pc)
+        destroyPC(pc)
 
         // we don't sleep here
         forceRender()
@@ -132,7 +129,12 @@ export function useWhepUseEffect(
   }
   //#endregion
 
-  const [stream, DoNotUse] = useState(() => new MediaStream()) // lazy init!, do not use setter!
+  // since we want to return a PC, AND how React.StrictMode works, (useEffect() runs twice)
+  // we MUST use a REF to hold the PC, and not a useState() hook
+  const pcref = useRef<PcOrNull>(null) //hook 1
+  // dont initializer here, just in the effect
+
+  const [stream] = useState(() => new MediaStream()) // lazy init!, do not use setter!
   const [isConnected, setIsConnected] = useState(false) //hook 2
   const [counter, setCounter] = useState(0) //hook 3
   const forceRender = () => setCounter(counter + 1)
@@ -141,22 +143,13 @@ export function useWhepUseEffect(
   // 1st time through
   // and on transition from connected -> disconnected
 
-  debug('-- before useeffect')
-  useEffect(() => {
-    debug('-- useEffect entry')
-
-    if (isConnected) {
-      debug('-- useEffect isConnected, return early')
-      return
-    }
-
-    const pc = newPcFn()
-
+  //#region dialwhep def
+  const dialWhep = useCallback(() => {
     const whep = new WHEPClient()
 
     debug('-- pre whep.view()')
     whep
-      .view(pc, url, token)
+      .view(pcref.current!, url, token)
       .then(() => {
         debug('-- whep.view() done OK')
       })
@@ -169,17 +162,29 @@ export function useWhepUseEffect(
         })
       })
     debug('-- post whep.view()')
+    return whep
+  }, [url, token]) // only re-create the callback if url or token changes
+  //#endregion
+
+  debug('-- useeffect before')
+  useEffect(() => {
+    debug('-- useeffect inside')
+
+    pcref.current = newPcFn()
+
+    const whep = dialWhep()
 
     // return the cleanup function to be called on component unmount
     return () => {
-      debug('-- useEffect cleanup')
-      destroyPCRef(pc)
+      debug('-- useeffect cleanup')
+      destroyPC(pcref.current!)
+      pcref.current = null
       whep.stop().catch(() => {
-        debug('-- whep.stop() done ERR')
+        debug('-- whep.stop() error')
       })
     }
   }, [counter]) // no-array: every render, []: just-a-single-time, [xxx]: when xxx changes
 
   debug('-- hook exit with status: ', isConnected)
-  return [stream, isConnected]
+  return [pcref, stream, isConnected]
 }
