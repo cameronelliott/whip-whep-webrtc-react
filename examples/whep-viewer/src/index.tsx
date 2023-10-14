@@ -17,14 +17,14 @@ function App() {
     <React.StrictMode>
       <WhepViewer url='http://localhost:4000'>
         <WhepViewerContext.Consumer>
-          {({ isConnected, mediaStream }) => {
+          {({ isConnected, stream }) => {
             return (
               <video
                 muted
                 autoPlay
                 controls
                 ref={(vid) => {
-                  vid && (vid.srcObject = mediaStream)
+                  vid && (vid.srcObject = stream)
                 }}
                 style={isConnected ? videoGood : videoBad}
               />
